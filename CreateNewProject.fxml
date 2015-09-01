@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="174.0" prefWidth="330.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pipeline.ui.NewProjectController">
+   <children>
+      <Button layoutX="138.0" layoutY="135.0" mnemonicParsing="false" onAction="#submitName" text="Submit" />
+      <Label layoutX="20.0" layoutY="14.0" text="Project Name:" />
+      <TextField fx:id="nameOfProject" layoutX="91.0" layoutY="31.0" />
+      <TextField fx:id="locationOfProject" layoutX="91.0" layoutY="86.0" />
+      <Label layoutX="20.0" layoutY="70.0" text="Project Location:" />
+      <Button layoutX="261.0" layoutY="86.0" mnemonicParsing="false" onAction="#createProjectDirectory" text="Browse" />
+   </children>
+</AnchorPane>
