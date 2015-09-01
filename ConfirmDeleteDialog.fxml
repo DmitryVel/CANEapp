@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="185.0" prefWidth="413.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Button fx:id="deleteYesBtn" layoutX="123.0" layoutY="137.0" mnemonicParsing="false" onAction="#yesClick" prefHeight="30.0" prefWidth="60.0" style="-fx-background-color: #00ff00;" text="Yes">
+         <font>
+            <Font size="14.0" />
+         </font>
+      </Button>
+      <Button fx:id="deleteNoBtn" layoutX="235.0" layoutY="137.0" mnemonicParsing="false" onAction="#noClick" prefHeight="30.0" prefWidth="60.0" style="-fx-background-color: #ff0000;" text="No">
+         <font>
+            <Font size="14.0" />
+         </font>
+      </Button>
+      <Label alignment="TOP_CENTER" layoutX="16.0" layoutY="14.0" prefHeight="95.0" prefWidth="381.0" text="Choosing to delete this project will result in the loss of all files related to the selected project server-side and will remove the project from this list.  Before you delete this project you should make sure you save any files you may need.  Are you sure you want to delete the project?" textAlignment="CENTER" textOverrun="WORD_ELLIPSIS" wrapText="true" />
+   </children>
+</Pane>
