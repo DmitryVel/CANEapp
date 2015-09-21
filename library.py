@@ -348,8 +348,10 @@ def main(read_name):
             read_L_local=os.path.join(project_dir,read_L_local)
         if read_L_local[-3:]==".gz" and not read_L_local[-6:]=="tar.gz":
             decompress=1
-            subprocess.call(LSF_decompress_run_L+["gzip","-d",read_L_local])
-            read_L_local=read_L_local[:-4]
+            read_L_local_new=read_L_local[:-3]
+            read_L_local_new=re.split(os.path.sep,read_L_local_new)[-1]
+            subprocess.call(LSF_decompress_run_L+["python",os.path.join(home_folder,"beta/gunzip.py"),"-p",project_dir,"-i",read_L_local,"-o",read_L_local_new])
+            read_L_local=read_L_local[:-3]
             read_L_local=re.split(os.path.sep,read_L_local)[-1]
             read_L_local=os.path.join(project_dir,read_L_local)
         if read_L_local[-4:]==".tar":
@@ -374,8 +376,10 @@ def main(read_name):
             read_R_local=os.path.join(project_dir,read_R_local)
         if read_R_local[-3:]==".gz" and not read_R_local[-6:]=="tar.gz":
             decompress=1
-            subprocess.call(LSF_decompress_run_R+["gzip","-d",read_R_local])
-            read_R_local=read_R_local[:-4]
+            read_R_local_new=read_R_local[:-3]
+            read_R_local_new=re.split(os.path.sep,read_R_local_new)[-1]
+            subprocess.call(LSF_decompress_run_R+["python",os.path.join(home_folder,"beta/gunzip.py"),"-p",project_dir,"-i",read_R_local,"-o",read_R_local_new])
+            read_R_local=read_R_local[:-3]
             read_R_local=re.split(os.path.sep,read_R_local)[-1]
             read_R_local=os.path.join(project_dir,read_R_local)
         if read_R_local[-4:]==".tar":
@@ -476,8 +480,10 @@ def main(read_name):
             read_name_local=os.path.join(project_dir,read_name_local)
         if read_name_local[-3:]==".gz" and not read_name_local[-6:]=="tar.gz":
             decompress=1
-            subprocess.call(LSF_decompress_run+["gzip","-d",read_name_local])
-            read_name_local=read_name_local[:-4]
+            read_name_local_new=read_name_local[:-3]
+            read_name_local_new=re.split(os.path.sep,read_name_local_new)[-1]
+            subprocess.call(LSF_decompress_run+["python",os.path.join(home_folder,"beta/gunzip.py"),"-p",project_dir,"-i",read_name_local,"-o",read_name_local_new])
+            read_name_local=read_name_local[:-3]
             read_name_local=re.split(os.path.sep,read_name_local)[-1]
             read_name_local=os.path.join(project_dir,read_name_local)
         if read_name_local[-4:]==".tar":
