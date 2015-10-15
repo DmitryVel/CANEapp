@@ -36,6 +36,155 @@ total_mem_split=re.split("\s+",total_mem_line)
 total_mem=int(total_mem_split[1])
 os_name=platform.linux_distribution()[0]
 
+def verify_install():
+    global os_name
+    incomplete=0
+    temp_tools_file=open(os.path.join(home_folder,"Pipeline/tools","temp_tools.txt"),"w")
+    tools_file=open(os.path.join(home_folder,"Pipeline/tools","tools.txt"),"r")
+    update_file=open(os.path.join(home_folder,"Pipeline/tools/CANE_update.txt"),"r")
+    os.chdir(os.path.join(home_folder,"Pipeline/tools"))
+    tophat_line=tools_file.next()
+    tophat_folder=re.split("\s+",tophat_line)[0]
+    tophat_line=update_file.next()
+    tophat_link=re.split("\s+",tophat_line)[0]
+    tophat_version=re.split("\s+",tophat_line)[1]
+    if not os.path.isfile(os.path.join(tophat_folder,"tophat")):
+        incomplete=1
+        try:
+            os.system("rm -r "+tophat_folder)
+        except:
+            print "No folder exists"
+        install_TopHat(tophat_link,tophat_version,temp_tools_file)
+    STAR_line=tools_file.next()
+    STAR_file=re.split("\s+",STAR_line)[0]
+    STAR_folder=dirname(dirname(STAR_file))
+    STAR_line=update_file.next()
+    STAR_link=re.split("\s+",STAR_line)[0]
+    STAR_version=re.split("\s+",STAR_line)[1]
+    if not os.path.isfile(STAR_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+STAR_folder)
+        except:
+            print "No folder exists"
+        install_STAR(STAR_link,STAR_version,temp_tools_file)
+    cuff_line=tools_file.next()
+    cuff_folder=re.split("\s+",cuff_line)[0]
+    cuff_line=update_file.next()
+    cuff_link=re.split("\s+",cuff_line)[0]
+    cuff_version=re.split("\s+",cuff_line)[1]
+    if not os.path.isfile(os.path.join(cuff_folder,"cufflinks")):
+        incomplete=1
+        try:
+            os.system("rm -r "+cuff_folder)
+        except:
+            print "No folder exists"
+        install_Cufflinks(cuff_link,cuff_version,temp_tools_file)
+    CNCI_line=tools_file.next()
+    CNCI_file=re.split("\s+",CNCI_line)[0]
+    CNCI_folder=dirname(CNCI_file)
+    CNCI_line=update_file.next()
+    CNCI_link=re.split("\s+",CNCI_line)[0]
+    CNCI_version=re.split("\s+",CNCI_line)[1]
+    if not os.path.isfile(CNCI_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+CNCI_folder)
+        except:
+            print "No folder exists"
+        install_CNCI(CNCI_link,CNCI_version,temp_tools_file)
+    Primer3_line=tools_file.next()
+    Primer3_file=re.split("\s+",Primer3_line)[0]
+    Primer3_folder=dirname(dirname(Primer3_file))
+    Primer3_line=update_file.next()
+    Primer3_link=re.split("\s+",Primer3_line)[0]
+    Primer3_version=re.split("\s+",Primer3_line)[1]
+    if not os.path.isfile(Primer3_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+Primer3_folder)
+        except:
+            print "No folder exists"
+        install_Primer3(Primer3_link,Primer3_version,temp_tools_file)
+    samtools_line=tools_file.next()
+    samtools_folder=re.split("\s+",samtools_line)[0]
+    samtools_line=update_file.next()
+    samtools_link=re.split("\s+",samtools_line)[0]
+    samtools_version=re.split("\s+",samtools_line)[1]
+    if not os.path.isfile(os.path.join(samtools_folder,"samtools")):
+        incomplete=1
+        try:
+            os.system("rm -r "+samtools_folder)
+        except:
+            print "No folder exists"
+        install_samtools(samtools_link,samtools_version,temp_tools_file)
+    bowtie_line=tools_file.next()
+    bowtie_folder=re.split("\s+",bowtie_line)[0]
+    bowtie_line=update_file.next()
+    bowtie_link=re.split("\s+",bowtie_line)[0]
+    bowtie_version=re.split("\s+",bowtie_line)[1]
+    if not os.path.isfile(os.path.join(bowtie_folder,"bowtie2")):
+        incomplete=1
+        try:
+            os.system("rm -r "+bowtie_folder)
+        except:
+            print "No folder exists"
+        install_bowtie(bowtie_link,bowtie_version,temp_tools_file)
+    SRA_line=tools_file.next()
+    SRA_file=re.split("\s+",SRA_line)[0]
+    SRA_folder=dirname(dirname(SRA_file))
+    SRA_line=update_file.next()
+    SRA_link=re.split("\s+",SRA_line)[0]
+    if os_name=='CentOS' or os_name=='Red Hat Enterprise Linux Server' or os_name=='Fedora':
+        SRA_link=re.split("\|",SRA_link)[0]
+    else:
+        if os_name=='Ubuntu':
+            SRA_link=re.split("\|",SRA_link)[1]
+        else:
+            SRA_link=re.split("\|",SRA_link)[0]
+    SRA_version=re.split("\s+",SRA_line)[1]
+    if not os.path.isfile(SRA_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+SRA_folder)
+        except:
+            print "No folder exists"
+        install_SRA(SRA_link,SRA_version,temp_tools_file)
+    HTSeq_line=tools_file.next()
+    HTSeq_file=re.split("\s+",HTSeq_line)[0]
+    HTSeq_folder=dirname(dirname(HTSeq_file))
+    HTSeq_line=update_file.next()
+    HTSeq_link=re.split("\s+",HTSeq_line)[0]
+    HTSeq_version=re.split("\s+",HTSeq_line)[1]
+    if not os.path.isfile(HTSeq_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+HTSeq_folder)
+        except:
+            print "No folder exists"
+        install_HTSeq(HTSeq_link,HTSeq_version,temp_tools_file)
+    R_line=tools_file.next()
+    R_file=re.split("\s+",R_line)[0]
+    R_folder=dirname(dirname(R_file))
+    R_line=update_file.next()
+    R_link=re.split("\s+",R_line)[0]
+    R_version=re.split("\s+",R_line)[1]
+    if not os.path.isfile(R_file):
+        incomplete=1
+        try:
+            os.system("rm -r "+R_folder)
+        except:
+            print "No folder exists"
+        install_R(R_link,R_version,temp_tools_file)
+    temp_tools_file.close()
+    os.system("rm "+os.path.join(home_folder,"Pipeline/tools","temp_tools.txt"))
+    if incomplete==0:
+        return True
+    else:
+        return False
+    
+    
+
 def install_numpy():
     os.chdir(os.path.join(home_folder,"Pipeline/tools"))
     download_file("http://sourceforge.net/projects/numpy/files/NumPy/1.9.2/numpy-1.9.2.zip","numpy-1.9.2.zip")
@@ -624,6 +773,8 @@ def main():
         else:
             if os_name=='Ubuntu':
                 SRA_link=re.split("\|",SRA_link)[1]
+            else:
+                SRA_link=re.split("\|",SRA_link)[0]
         SRA_version=re.split("\s+",SRA_line)[1]
         install_SRA(SRA_link,SRA_version,tools_file)
         HTSeq_line=update_file.next()
@@ -649,7 +800,16 @@ def main():
 
 os.system("chmod -R 750 "+os.path.join(home_folder,"beta"))
 main()
+install_status=verify_install()
+status_file=open(os.path.join(project_dir,"status.txt"),"a")
+if install_status==False:
+    install_status=verify_install()
+    if install_status==False:
+        status_file.write("Installation failed\n")
+    else:
+        status_file.write("Installation successful\n")
+else:
+    status_file.write("Installation successful\n")
 status_file.close()
 os.system("chmod -R 750 "+os.path.join(home_folder,"Pipeline/ref"))
 subprocess.call(["python",os.path.join(home_folder,"beta/main.py"),"-i",project_file_name,"-f",home_folder])
-
