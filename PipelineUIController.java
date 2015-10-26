@@ -3227,6 +3227,7 @@ public class PipelineUIController implements Initializable {
     
     @FXML
     private void finishSetup(ActionEvent event) throws IOException, JSchException {
+        finalSubmitBtn.setDisable(true);
         applySettings();
         String outputFile = project.projectLocation + sep + project.projectName + sep + "output.txt";
         FileWriter file = new FileWriter(outputFile);
@@ -3349,12 +3350,12 @@ public class PipelineUIController implements Initializable {
         SCPFrom.CopyFrom(project.serverUser, project.EC2Address, project.keyFileLocation, lfile1_2, rfile1, AuthMeth);
         File f = new File(lfile1_2);
         if(f.exists()){
-        finalSubmitBtn.setVisible(false);
         copyPipeline.main(filePath,project.projectName, project.keyFileLocation, project.EC2Address, AuthMeth, project.serverUser, project.home, outputFile, uploadFromComputer.isSelected());
         SingleSelectionModel<Tab> selectionModel = tabPane.getSelectionModel();
         selectionModel.select(startTab);
         }
         else{
+        finalSubmitBtn.setDisable(false);
         try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
