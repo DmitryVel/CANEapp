@@ -3227,7 +3227,7 @@ public class PipelineUIController implements Initializable {
     
     @FXML
     private void finishSetup(ActionEvent event) throws IOException, JSchException {
-        finalSubmitBtn.setDisable(true);
+        finalSubmitBtn.setVisible(false);
         applySettings();
         String outputFile = project.projectLocation + sep + project.projectName + sep + "output.txt";
         FileWriter file = new FileWriter(outputFile);
@@ -3355,7 +3355,7 @@ public class PipelineUIController implements Initializable {
         selectionModel.select(startTab);
         }
         else{
-        finalSubmitBtn.setDisable(false);
+        finalSubmitBtn.setVisible(true);
         try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
