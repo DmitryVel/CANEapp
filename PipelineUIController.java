@@ -3307,6 +3307,9 @@ public class PipelineUIController implements Initializable {
         }
         output.write("|");
         }
+        else{
+        output.write("SKIP|");    
+        }
         if(DEDESeq2.isSelected()){
         output.write(DESeq2FDR.getText()+":");
         output.write(DESeq2FDRMethod.getSelectionModel().getSelectedItem()+":");
@@ -3317,7 +3320,7 @@ public class PipelineUIController implements Initializable {
         }    
         }
         else{
-        output.write("|SKIP");    
+        output.write("SKIP");    
         }
         output.newLine();
         for (int i = 0; i < allSamples.size(); i++)
