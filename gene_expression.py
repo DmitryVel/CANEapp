@@ -37,28 +37,30 @@ contrast_listDESeq2=[]
 edgeR_options=options.edgeR_options
 DESeq_options=options.DESeq_options
 formats=options.formats
-exact=re.split("\:",edgeR_options)[0]
-GLM=re.split("\:",edgeR_options)[1]
-edgeR_FDR=float(re.split("\:",edgeR_options)[2])
-edgeR_FDR_method=re.split("\:",edgeR_options)[3]
-if edgeR_FDR_method=="null":
-    edgeR_FDR_method="BH"
-contrasts=re.split("\:",edgeR_options)[4]
-contrasts=re.split("-",contrasts)
-contrasts=contrasts[:-1]
-for i in xrange(len(contrasts)):
-    contrast=contrasts[i]
-    contrast_list.append(re.split("vs",contrast))
-DESeq_FDR=float(re.split("\:",DESeq_options)[0])
-DESeq_FDR_method=re.split("\:",DESeq_options)[1]
-if DESeq_FDR_method=="null":
-    DESeq_FDR_method="BH"
-contrasts=re.split("\:",DESeq_options)[2]
-contrasts=re.split("-",contrasts)
-contrasts=contrasts[:-1]
-for i in xrange(len(contrasts)):
-    contrast=contrasts[i]
-    contrast_listDESeq2.append(re.split("vs",contrast))
+if edgeR_options!="SKIP":
+    exact=re.split("\:",edgeR_options)[0]
+    GLM=re.split("\:",edgeR_options)[1]
+    edgeR_FDR=float(re.split("\:",edgeR_options)[2])
+    edgeR_FDR_method=re.split("\:",edgeR_options)[3]
+    if edgeR_FDR_method=="null":
+        edgeR_FDR_method="BH"
+    contrasts=re.split("\:",edgeR_options)[4]
+    contrasts=re.split("-",contrasts)
+    contrasts=contrasts[:-1]
+    for i in xrange(len(contrasts)):
+        contrast=contrasts[i]
+        contrast_list.append(re.split("vs",contrast))
+if DESeq_options!="SKIP":
+    DESeq_FDR=float(re.split("\:",DESeq_options)[0])
+    DESeq_FDR_method=re.split("\:",DESeq_options)[1]
+    if DESeq_FDR_method=="null":
+        DESeq_FDR_method="BH"
+    contrasts=re.split("\:",DESeq_options)[2]
+    contrasts=re.split("-",contrasts)
+    contrasts=contrasts[:-1]
+    for i in xrange(len(contrasts)):
+        contrast=contrasts[i]
+        contrast_listDESeq2.append(re.split("vs",contrast))
 for i in xrange(len(groups)):
     group=groups[i]
     group_name=re.split("\:",group)[0]
