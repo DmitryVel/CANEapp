@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+
+<AnchorPane id="AnchorPane" prefHeight="216.0" prefWidth="229.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8" fx:controller="pipeline.ui.AddSpeciesController">
+   <children>
+      <TextField fx:id="speciesNameFiled" layoutX="27.0" layoutY="20.0" promptText="Species" />
+      <TextField fx:id="assemblyNameFiled" layoutX="27.0" layoutY="55.0" promptText="Assembly" />
+      <TextField fx:id="fastaURLFiled" layoutX="27.0" layoutY="89.0" promptText="fasta file URL" />
+      <TextField fx:id="gtfURLFiled" layoutX="27.0" layoutY="124.0" promptText="gtf file URL" />
+      <Button fx:id="addSpeciesButton" layoutX="134.0" layoutY="164.0" mnemonicParsing="false" onAction="#submitAddSpecies" text="Add" />
+      <Button fx:id="cancelSpeciesButton" layoutX="27.0" layoutY="164.0" mnemonicParsing="false" onAction="#cancelSpecies" text="Cancel" />
+   </children>
+</AnchorPane>
