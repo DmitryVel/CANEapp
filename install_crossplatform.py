@@ -219,20 +219,24 @@ def get_project_info(project_lines):
     global total_mem
     options_split=re.split("\|",project_lines[3])
     basic_options=options_split[0]
-    basic_options_split=re.split("\:",basic_options)
+    basic_options_split=re.split("\;",basic_options)
     species=basic_options_split[3]
     print "Species: "+ species
     assembly=basic_options_split[4]
     print "Assembly: "+ assembly
-    aligner=basic_options_split[8]
+    fasta=basic_options_split[5]
+    print "Fasta: "+ fasta
+    gtf=basic_options_split[6]
+    print "GTF: "+ gtf
+    aligner=basic_options_split[10]
     print "Aligner: "+ aligner
     try:
         LSF=re.split("\t",project_lines[1])[5]
         LSF=re.split(",",LSF)
-        total_mem=int(LSF[1])*1000
+        total_mem=100000000
     except:
         LSF=[]
-    return [species,assembly,aligner,LSF]
+    return [species,assembly,fasta,gtf,aligner,LSF]
     
 def build_bowtie_index(species,assembly,fasta_filename,index_base,reference_file,LSF):
     status_file=open(os.path.join(project_dir,"status.txt"),"a")
@@ -244,7 +248,7 @@ def build_bowtie_index(species,assembly,fasta_filename,index_base,reference_file
         LSFProject=LSF[4]
         LSFProject=LSFProject.replace("\n","")
         LSFProject=LSFProject.replace("\r","")
-        LSF_run=['bsub','-o',os.path.join(home_folder,"Pipeline","ref","tophat.out"),'-e',os.path.join(home_folder,"Pipeline","ref","tophat.err"),'-q',LSF[0],'-R','"rusage[mem='+LSF[1]+'] span[hosts=1]"',"-n",LSF[2],"-W",LSF[3],"-P",LSFProject]
+        LSF_run=['bsub','-o',os.path.join(home_folder,"Pipeline","ref","tophat.out"),'-e',os.path.join(home_folder,"Pipeline","ref","tophat.err"),'-q',"general",'-R','"rusage[mem='+"28000"+'] span[hosts=1]"',"-n","1","-W","160:00","-P",LSFProject]
     else:
         LSF_run=[]
     subprocess.call(LSF_run+[os.path.join(home_folder,"Pipeline/tools/bowtie2-2.2.5/bowtie2-build"),os.path.join(home_folder,"Pipeline/ref",fasta_filename),os.path.join(index_dir,index_base+"_bowtie")])
@@ -271,7 +275,7 @@ def build_STAR_index(species,assembly,fasta_filename,index_base,reference_file,L
         LSFProject=LSF[4]
         LSFProject=LSFProject.replace("\n","")
         LSFProject=LSFProject.replace("\r","")
-        LSF_run=['bsub','-o',os.path.join(home_folder,"Pipeline","ref","STAR.out"),'-e',os.path.join(home_folder,"Pipeline","ref","STAR.err"),'-q',LSF[0],'-R','"rusage[mem='+LSF[1]+'] span[hosts=1]"',"-n",str(STAR_proc),"-W",LSF[3],"-P",LSFProject]
+        LSF_run=['bsub','-o',os.path.join(home_folder,"Pipeline","ref","STAR.out"),'-e',os.path.join(home_folder,"Pipeline","ref","STAR.err"),'-q',"bigmem",'-R','"rusage[mem='+"100000"+'] span[hosts=1]"',"-n","2","-W","24:00","-P",LSFProject]
     else:
         LSF_run=[]
     status_file=open(os.path.join(project_dir,"status.txt"),"a")
@@ -352,42 +356,31 @@ def prepare_gtf(gtf_filename):
     gtf_file.close()
     os.system("rm "+gtf_filename)
     
-def get_reference_fa(species,assembly,aligner,location,filename,name,reference_file,LSF):
+def get_reference_fa(species,assembly,aligner,fasta,reference_file,LSF):
     status_file=open(os.path.join(project_dir,"status.txt"),"a")
     status_file.write("Downloading genome reference...\n")
     status_file.close()
-    ftp = FTP('ftp.ensembl.org')
-    ftp.login()
-    os.chdir(os.path.join(home_folder,"Pipeline/ref"))
-    ftp.cwd(location)
-    fhandle = open(filename, 'wb')
-    print 'Getting ' + filename
-    ftp.retrbinary('RETR ' + filename, fhandle.write)
-    fhandle.close()
+    parse_object = urlparse(fasta)
+    filename=basename(parse_object.path)
+    download_file(fasta,filename)
     os.system('gunzip *.gz')
-    index_dir=os.path.join(home_folder,"Pipeline/ref",name)
+    index_dir=os.path.join(home_folder,"Pipeline/ref",assembly)
     fasta_path=os.path.join(home_folder,"Pipeline/ref",filename[:-3])
     reference_file.write(species+"\t"+assembly+"\t"+fasta_path+"\n")
     subprocess.call([os.path.join(home_folder,"beta/faToTwoBit"),filename[:-3],filename[:-5]+"2bit"])
     reference_file.write(species+"\t"+assembly+"\t"+os.path.join(home_folder,'Pipeline/ref',filename[:-5]+"2bit")+"\n")
     if aligner=="tophat":
-        build_bowtie_index(species,assembly,filename[:-3],name,reference_file,LSF)
+        build_bowtie_index(species,assembly,filename[:-3],assembly,reference_file,LSF)
     else:
-        build_STAR_index(species,assembly,filename[:-3],name,reference_file,LSF)
+        build_STAR_index(species,assembly,filename[:-3],assembly,reference_file,LSF)
 
-def get_reference_gtf(species,assembly,location,filename,reference_file):
+def get_reference_gtf(species,assembly,gtf,reference_file):
     status_file=open(os.path.join(project_dir,"status.txt"),"a")
     status_file.write("Downloading transcriptome reference...\n")
     status_file.close()
-    ftp = FTP('ftp.ensembl.org')
-    ftp.login()
-    os.chdir(os.path.join(home_folder,"Pipeline/ref"))
-    ftp.cwd(location)
-    filename=filename
-    fhandle = open(filename, 'wb')
-    print 'Getting ' + filename
-    ftp.retrbinary('RETR ' + filename, fhandle.write)
-    fhandle.close()
+    parse_object = urlparse(gtf)
+    filename=basename(parse_object.path)
+    download_file(gtf,filename)
     os.system('gunzip *.gz')
     prepare_gtf(filename[:-3])
     reference_file.write(species+"\t"+assembly+"\t"+os.path.join(home_folder,'Pipeline/ref',filename[:-7]+"_ref.gtf")+"\n")
@@ -471,7 +464,7 @@ def install_bowtie(link,version,tools_file):
     tools_file.write(os.path.join(home_folder,'Pipeline/tools',"bowtie2-"+version)+'\t')
     tools_file.write(version+"\n")
 
-def install_ref(species,assembly,aligner,status,LSF):
+def install_ref(species,assembly,fasta,gtf,aligner,status,LSF):
     exist=0
     os.chdir(os.path.join(home_folder,"Pipeline/ref"))
     tophat_installed=0
@@ -492,69 +485,14 @@ def install_ref(species,assembly,aligner,status,LSF):
         reference_file=open("reference.txt","a")
     if species=="human" and assembly=="GRCh38":
         if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-79/fasta/homo_sapiens/dna/','Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz','GRCh38',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-79/gtf/homo_sapiens/','Homo_sapiens.GRCh38.79.gtf.gz',reference_file)
+            get_reference_fa(species,assembly,aligner,fasta,reference_file,LSF)
+            get_reference_gtf(species,assembly,gtf,reference_file)
         else:
             if aligner=="tophat" and tophat_installed==0:
                 build_bowtie_index(species,assembly,'Homo_sapiens.GRCh38.dna.primary_assembly.fa','GRCh38',reference_file,LSF)
                 tophat_installed=1
             if aligner=="STAR" and STAR_installed==0:
                 build_STAR_index(species,assembly,'Homo_sapiens.GRCh38.dna.primary_assembly.fa','GRCh38',reference_file,LSF)
-                STAR_installed=1
-    if species=="human" and assembly=="GRCh37":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-75/fasta/homo_sapiens/dna/','Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz','GRCh37',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-75/gtf/homo_sapiens/','Homo_sapiens.GRCh37.75.gtf.gz',reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Homo_sapiens.GRCh37.75.dna.primary_assembly.fa','GRCh37',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Homo_sapiens.GRCh37.75.dna.primary_assembly.fa','GRCh37',reference_file,LSF)
-                STAR_installed=1
-    if species=="mouse" and assembly=="GRCm38":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-79/fasta/mus_musculus/dna/','Mus_musculus.GRCm38.dna.primary_assembly.fa.gz','GRCm38',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-79/gtf/mus_musculus/','Mus_musculus.GRCm38.79.gtf.gz',reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Mus_musculus.GRCm38.dna.primary_assembly.fa','GRCm38',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Mus_musculus.GRCm38.dna.primary_assembly.fa','GRCm38',reference_file,LSF)
-                STAR_installed=1
-    if species=="mouse" and assembly=="NCBIM37":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-67/fasta/mus_musculus/dna/','Mus_musculus.NCBIM37.67.dna.toplevel.fa.gz','NCBIM37',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-67/gtf/mus_musculus/','Mus_musculus.NCBIM37.67.gtf.gz',reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Mus_musculus.NCBIM37.67.dna.toplevel.fa','NCBIM37',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Mus_musculus.NCBIM37.67.dna.toplevel.fa','NCBIM37',reference_file,LSF)
-                STAR_installed=1
-    if species=="rat" and assembly=="Rnor_5.0":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-79/fasta/rattus_norvegicus/dna/','Rattus_norvegicus.Rnor_5.0.dna.toplevel.fa.gz','Rnor_5.0',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-79/gtf/rattus_norvegicus/','Rattus_norvegicus.Rnor_5.0.79.gtf.gz',reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Rattus_norvegicus.Rnor_5.0.dna.toplevel.fa','Rnor_5.0',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Rattus_norvegicus.Rnor_5.0.dna.toplevel.fa','Rnor_5.0',reference_file,LSF)
-                STAR_installed=1
-    if species=="rat" and assembly=="RGSC3.4":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,'/pub/release-69/fasta/rattus_norvegicus/dna/','Rattus_norvegicus.RGSC3.4.69.dna.toplevel.fa.gz','RGSC3.4',reference_file,LSF)
-            get_reference_gtf(species,assembly,'/pub/release-69/gtf/rattus_norvegicus/','Rattus_norvegicus.RGSC3.4.69.gtf.gz',reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Rattus_norvegicus.RGSC3.4.69.dna.toplevel.fa','RGSC3.4',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Rattus_norvegicus.RGSC3.4.69.dna.toplevel.fa','RGSC3.4',reference_file,LSF)
                 STAR_installed=1
     reference_file.close()
     
@@ -724,8 +662,10 @@ def main():
     project_info=get_project_info(project_lines)
     species=project_info[0]
     assembly=project_info[1]
-    aligner=project_info[2]
-    LSF=project_info[3]
+    fasta=project_info[2]
+    gtf=project_info[3]
+    aligner=project_info[4]
+    LSF=project_info[5]
     global os_name
     if not os.path.isfile(os.path.join(home_folder,"Pipeline/tools","tools.txt")):
         status_file=open(os.path.join(project_dir,"status.txt"),"a")
@@ -790,13 +730,13 @@ def main():
     if not os.path.isfile(os.path.join(home_folder,"Pipeline/ref","reference.txt")):
         os.mkdir(os.path.join(home_folder,"Pipeline/ref"))
         os.chdir(os.path.join(home_folder,"Pipeline/ref"))
-        install_ref(species,assembly,aligner,"new",LSF)
+        install_ref(species,assembly,fasta,gtf,aligner,"new",LSF)
     else:
         download_file("http://psychiatry.med.miami.edu/documents/research/CANE_update_v1.0.txt","CANE_update.txt")
         check_update(os.path.join(home_folder,"Pipeline/tools","tools.txt"),os.path.join(home_folder,"Pipeline/tools/CANE_update.txt"))
         os.system("chmod -R 750 "+os.path.join(home_folder,"Pipeline/tools"))
         os.chdir(os.path.join(home_folder,"Pipeline/ref"))
-        install_ref(species,assembly,aligner,"exist",LSF)
+        install_ref(species,assembly,fasta,gtf,aligner,"exist",LSF)
 
 os.system("chmod -R 750 "+os.path.join(home_folder,"beta"))
 main()
