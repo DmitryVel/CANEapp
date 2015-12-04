@@ -46,6 +46,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -55,6 +56,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import static pipeline.ui.SCPFrom.readLines;
 
 
 /**
@@ -170,10 +172,6 @@ public class PipelineUIController implements Initializable {
     private TextField totalFilter;
     @FXML
     private TextField groupFilter;
-    @FXML
-    private RadioButton humanSpecies;
-    @FXML
-    private RadioButton mouseSpecies;
     @FXML
     private RadioButton splicingYes;
     @FXML
@@ -350,20 +348,6 @@ public class PipelineUIController implements Initializable {
     @FXML
     private Label primerLabel;
     @FXML
-    private RadioButton GRCh37;
-    @FXML
-    private RadioButton GRCh38;
-    @FXML
-    private RadioButton ratSpecies;
-    @FXML
-    private RadioButton GRCm38;
-    @FXML
-    private RadioButton NCBIM37;
-    @FXML
-    private RadioButton Rnor;
-    @FXML
-    private RadioButton RGSC3;
-    @FXML
     private Pane customLibraryPane;
     @FXML
     private ChoiceBox<String> directionBox;
@@ -506,6 +490,55 @@ public class PipelineUIController implements Initializable {
     private Label DESeq2Label;
     @FXML
     private Label timeLabel1;
+    @FXML
+    private ComboBox<String> species;
+    @FXML
+    ObservableList speciesList = FXCollections.observableArrayList();
+    @FXML
+    private ComboBox<String> assembly;
+    @FXML
+    ObservableList assemblyList = FXCollections.observableArrayList();
+    @FXML
+    private Button addSpeciesButton;
+    
+    @FXML
+    private void addSpecies() throws IOException, JSchException, Exception {
+    AddSpeciesController AddSpeciesController = new AddSpeciesController();
+    AddSpeciesController.speciesData returnValue=AddSpeciesController.start(firstPath + sep +"species.txt");
+    if(returnValue!=null){
+        if(!speciesList.contains(returnValue.currentSpecies)){
+        speciesList.add(returnValue.currentSpecies);
+        }
+        species.setItems(speciesList);
+        species.getSelectionModel().select(returnValue.currentSpecies);
+        assemblyList.setAll(returnValue.currentAssemblies);
+        assembly.setItems(assemblyList);
+        assembly.getSelectionModel().select(returnValue.currentAssembly);
+    }
+}
+    
+    @FXML
+    private void speciesSeleceted() throws IOException, JSchException, Exception {
+        
+        File outputSpeciesFile = new File(firstPath + sep +"species.txt");
+        FileReader fr = new FileReader(outputSpeciesFile);
+        BufferedReader textReader1 = new BufferedReader(fr);
+        int numOfLines = readLines(firstPath + sep +"species.txt");
+        List allAssemblies = new ArrayList<>();
+        String speciesName=species.getSelectionModel().getSelectedItem();
+        for(int i = 0; i < numOfLines; i++) {
+            String line = textReader1.readLine();
+        String[] array = line.split("\t");
+        String refSpeciesName=array[0];
+        String refAssemblyName=array[1];
+        if(refSpeciesName.equals(speciesName)){
+            allAssemblies.add(refAssemblyName);
+        }
+        }
+        assemblyList.setAll(allAssemblies);
+        assembly.setItems(assemblyList);
+        assembly.getSelectionModel().select(0);
+    }
     
     @FXML
     private void DEDESeq2Selected(ActionEvent event) {
@@ -964,7 +997,12 @@ public class PipelineUIController implements Initializable {
                     //LocalFiles(localPath);
                     
                     }
-                resetSettings();
+                try{
+        resetSettings();
+        }
+        catch (IOException | JSchException ex) {
+                }
+                
                 writeProjectFile();
                 populateRecentProjectList();
                 groupsTab.setDisable(true);
@@ -1153,17 +1191,21 @@ public class PipelineUIController implements Initializable {
         String expressionFilter;
         String species;
         String genome;
+        String fasta;
+        String gtf;
         String pairwise;
         String splicing;
         String readFromWhere;
         String alignment;
         
-        public basicParameters(String reads, String transcript, String expression, String animal, String genes, String timepair, String splice, String alignMethod) {
+        public basicParameters(String reads, String transcript, String expression, String animal, String genes, String faFile, String gtfFile, String timepair, String splice, String alignMethod) {
             rawReads = reads;
             transcriptFilter = transcript;
             expressionFilter = expression;
             species = animal;
             genome = genes;
+            fasta = faFile;
+            gtf = gtfFile;
             pairwise = timepair;
             splicing = splice;
             alignment = alignMethod;
@@ -1304,8 +1346,8 @@ public class PipelineUIController implements Initializable {
     File f = new File(System.getProperty("java.class.path"));
     File dir = f.getAbsoluteFile().getParentFile();
     String firstPath = dir.toString();
-    String secondpath = firstPath.substring(0,firstPath.lastIndexOf("CANE"));
-    String mainpath = secondpath + "CANE_v1.0" + sep + "project_file.txt";
+    //String secondpath = firstPath.substring(0,firstPath.lastIndexOf("CANE"));
+    String mainpath = firstPath + sep + "project_file.txt";
     public File projectFile = new File(mainpath);
     
     @FXML
@@ -1356,7 +1398,8 @@ public class PipelineUIController implements Initializable {
         sampleName.clear();
     }
     
-    void resetSettings() {
+    void resetSettings() throws IOException, JSchException {
+        parameters.setDisable(true);
         exactTest.setSelected(false);
         edgeRFDR.setText("0.05");
         DESeq2FDR.setText("0.05");
@@ -1481,15 +1524,39 @@ public class PipelineUIController implements Initializable {
         cuffdiffAdvancedOptions.setVisible(false);
         cufflinksAdvancedOptions.setVisible(false);
         starOptionsPane.setVisible(false);
-        humanSpecies.setSelected(false);
-        mouseSpecies.setSelected(false);
-        ratSpecies.setSelected(false);
-        GRCh38.setVisible(false);
-        GRCh37.setVisible(false);
-        GRCm38.setVisible(false);
-        NCBIM37.setVisible(false);
-        RGSC3.setVisible(false);
-        Rnor.setVisible(false);
+        System.out.print(firstPath +  sep +"species.txt");
+        File speciesFile = new File(firstPath +  sep +"species.txt");
+        FileReader fr = new FileReader(speciesFile);
+        BufferedReader textReader = new BufferedReader(fr);
+        int numOfLines = readLines(firstPath + sep +"species.txt");
+        List allSpecies = new ArrayList<>();
+        for(int i = 0; i < numOfLines; i++) {
+        String line = textReader.readLine();
+        String[] array = line.split("\t");
+        String speciesName=array[0];
+        if (!allSpecies.contains(speciesName)){
+        allSpecies.add(speciesName);
+        }
+        }
+        System.out.print(allSpecies);
+        speciesList.setAll(allSpecies);
+        species.setItems(speciesList);
+        species.getSelectionModel().select("human");
+        List allAssemblies = new ArrayList<>();
+        FileReader fr1 = new FileReader(speciesFile);
+        BufferedReader textReader1 = new BufferedReader(fr1);
+        for(int i = 0; i < numOfLines; i++) {
+        String line = textReader1.readLine();
+        String[] array = line.split("\t");
+        String speciesName=array[0];
+        String assemblyName=array[1];
+        if (!allAssemblies.contains(assemblyName) && species.getSelectionModel().getSelectedItem().equals(speciesName)){
+        allAssemblies.add(assemblyName);
+        }
+        }
+        assemblyList.setAll(allAssemblies);
+        assembly.setItems(assemblyList);
+        assembly.getSelectionModel().select(0);
         allSamples = new ArrayList<>();
         samplesListView.clear();
         listViewItems.clear();
@@ -1564,11 +1631,7 @@ public class PipelineUIController implements Initializable {
         tophatOptionsLabel.setVisible(true);
         tophatAlignmentBtn.setSelected(true);
         starAlignmentBtn.setSelected(false);
-        if (humanSpecies.isSelected() || mouseSpecies.isSelected() || ratSpecies.isSelected()) {
-            if (GRCh37.isSelected() || GRCh38.isSelected() || Rnor.isSelected() || RGSC3.isSelected() || GRCm38.isSelected() || NCBIM37.isSelected()) {
-                DGE.setDisable(false);
-            }
-        }
+        DGE.setDisable(false);
     }
 
     @FXML
@@ -1578,11 +1641,7 @@ public class PipelineUIController implements Initializable {
         tophatOptionsLabel.setVisible(false);
         tophatAlignmentBtn.setSelected(false);
         starAlignmentBtn.setSelected(true);
-        if (humanSpecies.isSelected() || mouseSpecies.isSelected() || ratSpecies.isSelected()) {
-            if (GRCh37.isSelected() || GRCh38.isSelected() || Rnor.isSelected() || RGSC3.isSelected() || GRCm38.isSelected() || NCBIM37.isSelected()) {
-                DGE.setDisable(false);
-            }
-        }
+        DGE.setDisable(false);
     }
 
     @FXML
@@ -1637,7 +1696,11 @@ public class PipelineUIController implements Initializable {
             if (!loadRecentFailed.isVisible()) {
                 projectNameLabel.setText(projectName);
                 projectStatusPane.setVisible(true);
-                resetSettings();
+                try{
+        resetSettings();
+        }
+        catch (IOException | JSchException ex) {
+                }
                 loadProject(refLocation, projectName);
                 System.out.print("Project: "+project.projectLocation);
         }        
@@ -1734,80 +1797,6 @@ public class PipelineUIController implements Initializable {
     }
     }
     }
-    }
-
-    @FXML
-    private void GRCh37Click(ActionEvent event) {
-        GRCh38.setSelected(false);
-        GRCh37.setSelected(true);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void GRCh38Click(ActionEvent event) {
-        GRCh38.setSelected(true);
-        GRCh37.setSelected(false);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void ratSpeciesClick(ActionEvent event) {
-        humanSpecies.setSelected(false);
-        mouseSpecies.setSelected(false);
-        ratSpecies.setSelected(true);
-        GRCh38.setVisible(false);
-        GRCh37.setVisible(false);
-        GRCm38.setVisible(false);
-        NCBIM37.setVisible(false);
-        RGSC3.setVisible(true);
-        Rnor.setVisible(true);
-        GRCh38.setSelected(false);
-        GRCh37.setSelected(false);
-        GRCm38.setSelected(false);
-        NCBIM37.setSelected(false);
-        RGSC3.setSelected(false);
-        Rnor.setSelected(false);
-        DGE.setDisable(true);
-    }
-
-    @FXML
-    private void GRCm38Click(ActionEvent event) {
-        GRCm38.setSelected(true);
-        NCBIM37.setSelected(false);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void NCBIM37Click(ActionEvent event) {
-        NCBIM37.setSelected(true);
-        GRCm38.setSelected(false);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void RnorClick(ActionEvent event) {
-        Rnor.setSelected(true);
-        RGSC3.setSelected(false);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
-    }
-
-    @FXML
-    private void RGSCClick(ActionEvent event) {
-        RGSC3.setSelected(true);
-        Rnor.setSelected(false);
-        if (tophatAlignmentBtn.isSelected() || starAlignmentBtn.isSelected()) {
-            DGE.setDisable(false);
-        }
     }
 
     @FXML
@@ -2122,7 +2111,11 @@ public class PipelineUIController implements Initializable {
         @Override
     public void initialize(URL url, ResourceBundle rb) {
         projectStatusPane.setVisible(false);
+        try{
         resetSettings();
+        }
+        catch (IOException | JSchException ex) {
+                }
         BooleanBinding bb = new BooleanBinding() {
         {
             super.bind(username.textProperty(),
@@ -2248,7 +2241,7 @@ public class PipelineUIController implements Initializable {
                 groups1.setItems(listViewItems);
             }
             String[] options = fileData[3].split("\\|");
-            String[] basicOptions = options[0].split(":");
+            String[] basicOptions = options[0].split(";");
             switch (basicOptions[0]) {
                 case "yes":
                     trimReadsYesBtn.setSelected(true);
@@ -2292,60 +2285,9 @@ public class PipelineUIController implements Initializable {
                 thresholdLabel.setVisible(true);
                 thresholdValue.setVisible(true);
             }
-            switch (basicOptions[3]) {
-                case "human":
-                    humanSpecies.setSelected(true);
-                    mouseSpecies.setSelected(false);
-                    ratSpecies.setSelected(false);
-                    GRCh38.setVisible(true);
-                    GRCh37.setVisible(true);
-                    switch (basicOptions[4]) {
-                        case "GRCh37":
-                            GRCh37.setSelected(true);
-                            GRCh38.setSelected(false);
-                            break;
-                        case "GRCh38":
-                            GRCh38.setSelected(true);
-                            GRCh37.setSelected(false);
-                            break;
-                    }                        
-                    break;
-                case "mouse":
-                    mouseSpecies.setSelected(true);
-                    humanSpecies.setSelected(false);
-                    ratSpecies.setSelected(false);
-                    GRCm38.setVisible(true);
-                    NCBIM37.setVisible(true);
-                    switch(basicOptions[4]) {
-                        case "GRCm38":
-                            GRCm38.setSelected(true);
-                            NCBIM37.setSelected(false);
-                            break;
-                        case "NCBIM37":
-                            NCBIM37.setSelected(true);
-                            GRCm38.setSelected(false);
-                            break;
-                    }
-                    break;
-                case "rat":
-                    ratSpecies.setSelected(true);
-                    humanSpecies.setSelected(false);
-                    mouseSpecies.setSelected(false);
-                    Rnor.setVisible(true);
-                    RGSC3.setVisible(true);
-                    switch (basicOptions[4]) {
-                        case "Rnor_5.0":
-                            Rnor.setSelected(true);
-                            RGSC3.setSelected(false);
-                            break;
-                        case "RGSC3.4":
-                            RGSC3.setSelected(true);
-                            Rnor.setSelected(false);
-                            break;
-                    }
-                    break;
-            }
-            switch (basicOptions[5]) {
+            species.getSelectionModel().select(basicOptions[3]);
+            assembly.getSelectionModel().select(basicOptions[4]);
+            switch (basicOptions[7]) {
                 case "yes":
                     splicingYes.setSelected(true);
                     splicingNo.setSelected(false);
@@ -2355,7 +2297,7 @@ public class PipelineUIController implements Initializable {
                     splicingYes.setSelected(false);
                     break;
             }
-            switch (basicOptions[8]) {
+            switch (basicOptions[10]) {
                 case "STAR":
                     starAlignmentBtn.setSelected(true);
                     tophatAlignmentBtn.setSelected(false);
@@ -2540,7 +2482,11 @@ public class PipelineUIController implements Initializable {
         PipelineUI current = new PipelineUI();
         projectData newproject = new projectData();
         newproject = current.showAddProjectDialog(newproject);
+        try{
         resetSettings();
+        }
+        catch (IOException | JSchException ex) { 
+                }
         current_index=0;
         if (newproject.projectName != null && newproject.projectLocation != null) {
             project = newproject;
@@ -2550,7 +2496,7 @@ public class PipelineUIController implements Initializable {
             addSamples.setDisable(true);
             parameters.setDisable(true);
             submitTab.setDisable(true);
-            //DGE.setDisable(true);
+            DGE.setDisable(true);
             finalSubmitBtn.setVisible(true);
             if (!isProjectEmpty(projectWrapper.p9)) {projectWrapper.p10 = projectWrapper.p9;}
             if (!isProjectEmpty(projectWrapper.p8)) {projectWrapper.p9 = projectWrapper.p8;}
@@ -2634,6 +2580,7 @@ public class PipelineUIController implements Initializable {
         }
         libTypes.setAll("","Custom single", "Illumina mRNA single", "Illumina small RNA single");
         libType.getItems().setAll(libTypes);
+        libType.getSelectionModel().select(0);
         singleReadLocation.setVisible(true);
         rightReadLocation.setVisible(false);
         rightReadLocation.clear();
@@ -2792,45 +2739,6 @@ public class PipelineUIController implements Initializable {
         groupFilterLabel.setVisible(false);
     }
 
-    @FXML
-    private void humanSpeciesClick(ActionEvent event) {
-        humanSpecies.setSelected(true);
-        mouseSpecies.setSelected(false);
-        ratSpecies.setSelected(false);
-        GRCh38.setVisible(true);
-        GRCh37.setVisible(true);
-        GRCm38.setVisible(false);
-        NCBIM37.setVisible(false);
-        RGSC3.setVisible(false);
-        Rnor.setVisible(false);
-        GRCh38.setSelected(false);
-        GRCh37.setSelected(false);
-        GRCm38.setSelected(false);
-        NCBIM37.setSelected(false);
-        RGSC3.setSelected(false);
-        Rnor.setSelected(false);
-        DGE.setDisable(true);
-    }
-
-    @FXML
-    private void mouseSpeciesClick(ActionEvent event) {
-        mouseSpecies.setSelected(true);
-        humanSpecies.setSelected(false);
-        ratSpecies.setSelected(false);
-        GRCh38.setVisible(false);
-        GRCh37.setVisible(false);
-        GRCm38.setVisible(true);
-        NCBIM37.setVisible(true);
-        RGSC3.setVisible(false);
-        Rnor.setVisible(false);
-        GRCh38.setSelected(false);
-        GRCh37.setSelected(false);
-        GRCm38.setSelected(false);
-        NCBIM37.setSelected(false);
-        RGSC3.setSelected(false);
-        Rnor.setSelected(false);
-        DGE.setDisable(true);
-    }
 
     @FXML
     private void splicingYesClick(ActionEvent event) {
@@ -3043,12 +2951,14 @@ public class PipelineUIController implements Initializable {
     }
     
     
-    private void applySettings() {
+    private void applySettings() throws FileNotFoundException, IOException {
         String reads = null;
         String transcript = null;
         String expression = null;
         String animal = null;
         String genes = null;
+        String fasta = null;
+        String gtf = null;
         String timepaircomp = null;
         String alignment = null;
         String splice = null;
@@ -3061,25 +2971,24 @@ public class PipelineUIController implements Initializable {
         if (filterGenesYesBtn.isSelected()) {expression = thresholdValue.getText();}
         else if (filterGenesNoBtn.isSelected()) {expression = "no";}
         else {}
-        if (humanSpecies.isSelected()) {
-            animal = "human";
-            if (GRCh37.isSelected()) {genes = "GRCh37";}
-            else if (GRCh38.isSelected()) {genes = "GRCh38";}
-            else {}
+        animal = species.getSelectionModel().getSelectedItem();
+        genes = assembly.getSelectionModel().getSelectedItem();
+        File outputSpeciesFile = new File(firstPath + sep +"species.txt");
+        FileReader fr = new FileReader(outputSpeciesFile);
+        BufferedReader textReader1 = new BufferedReader(fr);
+        int numOfLines = readLines(firstPath + sep +"species.txt");
+        System.out.print(animal);
+        System.out.print(genes);
+        for(int i = 0; i < numOfLines; i++) {
+            String line = textReader1.readLine();
+            String[] array = line.split("\t");
+            String refSpecies=array[0];
+            String refAssembly=array[1];
+            if(refSpecies.equals(animal) && refAssembly.equals(genes)){
+                fasta=array[2];
+                gtf=array[3];
+            }
         }
-        else if (mouseSpecies.isSelected()) {
-            animal = "mouse";
-            if (NCBIM37.isSelected()) {genes = "NCBIM37";}
-            else if (GRCm38.isSelected()) {genes = "GRCm38";}
-            else {}
-        }
-        else if (ratSpecies.isSelected()) {
-            animal = "rat";
-            if (RGSC3.isSelected()) {genes = "RGSC3.4";}
-            else if (Rnor.isSelected()) {genes = "Rnor_5.0";}
-            else {}
-        }
-        else {}
         if (splicingYes.isSelected()) {splice = "yes";}
         else if (splicingNo.isSelected()) {splice = "no";}
         else {}
@@ -3089,7 +2998,7 @@ public class PipelineUIController implements Initializable {
         if (pairwiseCompBtn.isSelected()) {timepaircomp = "no";}
         else if (timecourseCompBtn.isSelected()) {timepaircomp = "yes";}
         else {}
-        basic = new basicParameters(reads, transcript, expression, animal, genes, timepaircomp, splice, alignment);
+        basic = new basicParameters(reads, transcript, expression, animal, genes, fasta, gtf, timepaircomp, splice, alignment);
         if (useCloudFiles.isSelected()) {basic.readFromWhere = "cloud";}
         else if (uploadFromComputer.isSelected()) {basic.readFromWhere = "computer";}
         String linksMask = null;
@@ -3225,6 +3134,7 @@ public class PipelineUIController implements Initializable {
     }
     }
     
+    
     @FXML
     private void finishSetup(ActionEvent event) throws IOException, JSchException {
         finalSubmitBtn.setVisible(false);
@@ -3256,7 +3166,7 @@ public class PipelineUIController implements Initializable {
             if (h < listViewItems.size()) {output.write(" ");}
         }
         output.newLine();
-        output.write(basic.rawReads + ":" + basic.transcriptFilter + ":" + basic.expressionFilter + ":" + basic.species + ":" + basic.genome + ":" + basic.pairwise + ":" + basic.splicing + ":" + basic.readFromWhere + ":" + basic.alignment + "|Star-settings");
+        output.write(basic.rawReads + ";" + basic.transcriptFilter + ";" + basic.expressionFilter + ";" + basic.species + ";" + basic.genome +  ";" + basic.fasta + ";" + basic.gtf + ";" + basic.pairwise + ";" + basic.splicing + ";" + basic.readFromWhere + ";" + basic.alignment + "|Star-settings");
         if (basic.alignment == "STAR") {
             if (starDefaultButton.isSelected()) {output.write("|TopHat-settings|");}
             else if (starCustomButton.isSelected()) {output.write(" " + starOptions.getText() + "|TopHat-settings|");}
@@ -3391,14 +3301,13 @@ public class PipelineUIController implements Initializable {
             if(insert==""){
                 insert="-1";
             }
-            int libIndex = libType.getSelectionModel().getSelectedIndex();
-            String libraryName = libTypes.get(libIndex);
-            adapterSettings library = new adapterSettings(libraryName);
             noGroupError.setVisible(false);
             if (singleEnd.isSelected()) {
                 location = singleReadLocation.getText();
                 if (sampleName.getText().length() != 0) {
-                    if (singleReadLocation.getText().length() != 0) {
+                    if (singleReadLocation.getText().length() != 0 && !libType.getSelectionModel().getSelectedItem().equals("")) {
+                        String libraryName = libType.getSelectionModel().getSelectedItem();
+                        adapterSettings library = new adapterSettings(libraryName);
                         if (library.exists()) {
                             samplesListView.add(name);
                             sampleList.setItems(samplesListView);
@@ -3414,7 +3323,9 @@ public class PipelineUIController implements Initializable {
                 String rightLocation = rightReadLocation.getText();
                 location = leftLocation + "|" + rightLocation;
                 if (sampleName.getText().length() != 0) {
-                    if ((leftReadLocation.getText().length() != 0) && (rightReadLocation.getText().length() != 0)) {
+                    if ((leftReadLocation.getText().length() != 0) && (rightReadLocation.getText().length() != 0) && !libType.getSelectionModel().getSelectedItem().equals("")) {
+                        String libraryName = libType.getSelectionModel().getSelectedItem();
+                        adapterSettings library = new adapterSettings(libraryName);
                         if (library.exists()) {
                             samplesListView.add(name);
                             sampleList.setItems(samplesListView);
