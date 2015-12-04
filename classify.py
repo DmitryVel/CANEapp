@@ -26,46 +26,59 @@ class_output_file=open(os.path.join(path,"classification.txt"),"w")
 def check_gene_names(current_lines):
     gene_names=[]
     gene_types=[]
+    pc_name="none"
+    antisense=0
+    linc=0
     for i in xrange(len(current_lines)):
         current_line=current_lines[i]
         split=re.split("\s+",current_line)
         gene_name=split[15]
         gene_name=gene_name[1:-2]
-        antisense=0
-        linc=0
         if len(split)>21:
-            linc=0
             class_code=split[21]
             class_code=class_code[1:-2]
             if class_code=="x" or class_code=="s":
                 antisense=1
         else:
             linc=1
-        if antisense==0 and linc==0:
-            if gene_name not in gene_names:
-                gene_type=check(gene_name)
-                gene_types.append(gene_type)
-                gene_names.append(gene_name)
+        if len(split)>21:
+            if class_code!="x" and class_code!="s":
+                if gene_name not in gene_names:
+                    gene_type=check(gene_name)
+                    if gene_type=="protein_coding":
+                        pc_name=gene_name
+                    gene_types.append(gene_type)
+                    gene_names.append(gene_name)
     annotated=0
-    if len(gene_types)==1:
-        return gene_types[0]
-        annotated=1
     if gene_types.count("protein_coding")==1:
-        return "protein_coding"
+        return ["protein_coding",pc_name]
         annotated=1
     if gene_types.count("protein_coding")>1:
-        return "overlapping_loci"
+        return ["overlapping_loci"]
         annotated=1
     if len(gene_types)==gene_types.count("lincRNA") and antisense==0:
-        return "lincRNA"
+        return ["lincRNA"]
         annotated=1
     if len(gene_types)==gene_types.count("lincRNA") and antisense==1:
-        return "antisense"
+        antisense_name=""
+        for i in xrange(len(gene_names)):
+            antisense_name=antisense_name+","+gene_names[i]
+        antisense_name=antisense_name[1:]
+        return ["antisense",antisense_name]
+        annotated=1
+    if len(gene_types)==1:
+        if gene_types[0]=="antisense":
+            antisense_name=""
+            for i in xrange(len(gene_names)):
+                antisense_name=antisense_name+","+gene_names[i]
+            antisense_name=antisense_name[1:]
+            return ["antisense",antisense_name]
+        else:
+            return [gene_types[0]]
         annotated=1
     if annotated==0:
         print "overlapping_loci"
-        return "overlapping_loci"
-
+        return ["overlapping_loci"]
 
 def check(gene_name):
     for i in xrange(len(reflines)):
@@ -197,13 +210,22 @@ def main():
                     ann=1
                 if annotated==1:
                     gene_type=check_gene_names(current_lines)
+                    if len(gene_type)>1:
+                        gene_name=gene_type[1]
+                    gene_type_local=gene_type[0]
                     for i in xrange(len(current_lines)):
                         current_line=current_lines[i]
-                        output_file.write(current_line[:-1]+' type '+gene_type+';')
+                        output_file.write(current_line[:-1]+' type '+gene_type_local+';')
                         output_file.write("\n")
                     class_output_file.write(current_locus)
-                    class_output_file.write("\t")
-                    class_output_file.write(gene_type)
+                    class_output_file.write("\t")                   
+                    class_output_file.write(gene_type_local)
+                    if len(gene_type)>1:
+                        class_output_file.write("\t")
+                        class_output_file.write(gene_name)
+                        print current_locus
+                        print gene_name
+                        print gene_type_local
                     class_output_file.write("\n")
                     ann=1
                 if antisense==0 and annotated==0 and linc==1 and mixed==0 and run_on==0 and repeat==0 and intronic==0:
@@ -298,19 +320,23 @@ def main():
         class_output_file.write("\n")
         ann=1
     if annotated==1:
-        gene_type="nothing"
-        fusion=check_gene_names(current_lines)
-        if fusion=="fusion":
-            gene_type="fusion"
-        else:
-            gene_type=check(current_gene)
+        gene_type=check_gene_names(current_lines)
+        if len(gene_type)>1:
+            gene_name=gene_type[1]
+        gene_type_local=gene_type[0]
         for i in xrange(len(current_lines)):
             current_line=current_lines[i]
-            output_file.write(current_line[:-1]+' type '+gene_type+';')
+            output_file.write(current_line[:-1]+' type '+gene_type_local+';')
             output_file.write("\n")
         class_output_file.write(current_locus)
-        class_output_file.write("\t")
-        class_output_file.write(gene_type)
+        class_output_file.write("\t")                   
+        class_output_file.write(gene_type_local)
+        if len(gene_type)>1:
+            class_output_file.write("\t")
+            class_output_file.write(gene_name)
+            print current_locus
+            print gene_name
+            print gene_type_local
         class_output_file.write("\n")
         ann=1
     if linc==1 and annotated==0 and antisense==0:
