@@ -16,7 +16,7 @@ parser.add_option("-s", "--samples", type=str, dest="samples",
 path=options.path
 diff_file=open(os.path.join(path,"gene_exp.diff"),"r")
 diff_line=diff_file.next()
-gtf_file=open(os.path.join(path,"results","final.gtf"),"r")
+gtf_file=open(os.path.join(path,"classified.gtf"),"r")
 samples=options.samples
 samples=samples.replace(" ","")
 samples=samples.replace("\'","")
@@ -71,7 +71,7 @@ def format_out(combination,output_file):
     expression_file=open(os.path.join(path,"genes.read_group_tracking"),"r")
     expression_file.next()
     tracking_file.next()
-    annotation_file=open(os.path.join(path,"class.txt"),"r")
+    annotation_file=open(os.path.join(path,"classification.txt"),"r")
     group1=combination[0]
     group2=combination[1]
     output_file.write("Locus ID")
@@ -122,6 +122,8 @@ def format_out(combination,output_file):
                 annotation_locus=split_annotation[0]
                 if annotation_locus==locus_id:
                     gene_class=split_annotation[1]
+                    if len(split_annotation)>3:
+                        gene_name=split_annotation[2]
                     break
             expression=[]
             for i in xrange(len(samples)):
