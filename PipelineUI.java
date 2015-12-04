@@ -46,8 +46,8 @@ public class PipelineUI extends Application {
         File f = new File(System.getProperty("java.class.path"));
         File dir = f.getAbsoluteFile().getParentFile();
         String firstPath = dir.toString();
-        String secondpath = firstPath.substring(0,firstPath.lastIndexOf("CANE_v1.0"));
-        String mainpath = secondpath + "CANE_v1.0" + sep + "misc" + sep + "cane.png";
+        //String secondpath = firstPath.substring(0,firstPath.lastIndexOf("CANE_v1.0"));
+        String mainpath = firstPath + sep + "misc" + sep + "cane.png";
         Image icon = new Image("file:"+mainpath);
         stage.getIcons().add(icon);
         stage.setTitle("CANE analysis setup");
