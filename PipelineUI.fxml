@@ -287,11 +287,7 @@
                   <Label fx:id="groupFilterLabel" layoutX="583.0" layoutY="113.0" prefHeight="17.0" prefWidth="87.0" text="Group Filter:" />
                   <TextField fx:id="groupFilter" layoutX="667.0" layoutY="109.0" prefHeight="25.0" prefWidth="35.0" text="75" />
                   <Label layoutX="173.0" layoutY="28.0" text="Species:" />
-                  <RadioButton fx:id="humanSpecies" layoutX="183.0" layoutY="49.0" mnemonicParsing="false" onAction="#humanSpeciesClick" text="Human" />
-                  <RadioButton fx:id="mouseSpecies" layoutX="257.0" layoutY="49.0" mnemonicParsing="false" onAction="#mouseSpeciesClick" text="Mouse" />
                   <Label layoutX="172.0" layoutY="74.0" text="Assembly:" />
-                  <RadioButton fx:id="GRCh37" layoutX="278.0" layoutY="98.0" mnemonicParsing="false" onAction="#GRCh37Click" text="GRCh37" />
-                  <RadioButton fx:id="GRCh38" layoutX="182.0" layoutY="99.0" mnemonicParsing="false" onAction="#GRCh38Click" text="GRCh38" />
                   <Pane fx:id="starOptionsPane" layoutX="21.0" layoutY="187.0" prefHeight="50.0" prefWidth="700.0">
                      <children>
                         <Label fx:id="starOptionsLabel" layoutY="1.0" text="STAR Advanced Options:">
@@ -311,11 +307,6 @@
                   <Label layoutX="28.0" layoutY="74.0" text="Alignment Program:" />
                   <RadioButton fx:id="tophatAlignmentBtn" layoutX="32.0" layoutY="96.0" mnemonicParsing="false" onAction="#tophatAlignmentSelected" text="Tophat" />
                   <RadioButton fx:id="starAlignmentBtn" layoutX="101.0" layoutY="96.0" mnemonicParsing="false" onAction="#starAlignmentSelected" text="STAR" />
-                  <RadioButton fx:id="ratSpecies" layoutX="326.0" layoutY="49.0" mnemonicParsing="false" onAction="#ratSpeciesClick" text="Rat" />
-                  <RadioButton fx:id="GRCm38" layoutX="183.0" layoutY="99.0" mnemonicParsing="false" onAction="#GRCm38Click" text="GRCm38" />
-                  <RadioButton fx:id="NCBIM37" layoutX="278.0" layoutY="100.0" mnemonicParsing="false" onAction="#NCBIM37Click" text="NCBIM37" />
-                  <RadioButton fx:id="Rnor" layoutX="183.0" layoutY="99.0" mnemonicParsing="false" onAction="#RnorClick" text="Rnor_5.0" />
-                  <RadioButton fx:id="RGSC3" layoutX="278.0" layoutY="99.0" mnemonicParsing="false" onAction="#RGSCClick" text="RGSC3.4" />
                   <Pane fx:id="secretSplicingPane" layoutX="-86.0" layoutY="428.0" prefHeight="179.0" prefWidth="139.0" visible="false">
                      <children>
                         <Label layoutX="59.0" layoutY="91.0" text="Splicing Analysis:" />
@@ -362,6 +353,9 @@
                         <Font name="System Bold" size="14.0" />
                      </font>
                   </Label>
+                  <ComboBox fx:id="species" layoutX="172.0" layoutY="45.0" onAction="#speciesSeleceted" prefWidth="150.0" />
+                  <ComboBox fx:id="assembly" layoutX="173.0" layoutY="92.0" prefWidth="150.0" />
+                  <Button fx:id="addSpeciesButton" layoutX="170.0" layoutY="135.0" mnemonicParsing="false" onAction="#addSpecies" text="Add species/assembly" />
                </children></AnchorPane>
         </content>
       </Tab>
