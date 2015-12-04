@@ -151,7 +151,7 @@ def get_project_info(project_lines):
     print "Groups: "+ str(groups)
     options_split=re.split("\|",project_lines[3])
     basic_options=options_split[0]
-    basic_options_split=re.split("\:",basic_options)
+    basic_options_split=re.split("\;",basic_options)
     trimming=basic_options_split[0]
     print "Trimming: "+ trimming
     if basic_options_split[1]!="no":
@@ -165,13 +165,13 @@ def get_project_info(project_lines):
     print "Species: "+ species
     assembly=basic_options_split[4]
     print "Assembly: "+ assembly
-    time_series=basic_options_split[5]
+    time_series=basic_options_split[7]
     print "Time series: "+ time_series
-    splicing=basic_options_split[6]
+    splicing=basic_options_split[8]
     print "Splicing: "+ splicing
-    transfer=basic_options_split[7]
+    transfer=basic_options_split[9]
     print "Transfer: "+ transfer
-    aligner=basic_options_split[8]
+    aligner=basic_options_split[10]
     print "Aligner: "+ aligner
     STAR_options=options_split[1]
     print "STAR option: "+ STAR_options
@@ -196,7 +196,7 @@ def create_job(sample_name,read_name,library_type,insert_length,insert_CV,refere
         LSFProject=LSFProject.replace("\n","")
         LSFProject=LSFProject.replace("\r","")
         LSF_run=str(LSF[0]+","+LSF[1]+","+LSF[2]+","+LSF[3]+","+LSFProject)
-        LSF_pars=['bsub','-o',os.path.join(path,"logs",sample_name+'_lib.out'),'-e',os.path.join(path,"logs",sample_name+'_lib.err'),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
+        LSF_pars=['bsub','-o',os.path.join(path,"logs",sample_name+'_lib.out'),'-e',os.path.join(path,"logs",sample_name+'_lib.err'),'-q',"general","-n","1",'-R','"rusage[mem=15000] span[hosts=1]"',"-W","160:00","-P",LSFProject]
     else:
         LSF_run="none"
         LSF_pars=[]
@@ -250,6 +250,94 @@ def filter_ambiguous(input_file):
     filtered_out.close()
     removed_out.close()
     input_file.close()
+
+def Cuffquant(quant,samples_and_strands,LSF,LSFProject,aligner,path,Cuffdiff_options,gtf):
+    Cuffdiff_options_split=re.split(" ",Cuffdiff_options)
+    quant_options=""
+    skip=0
+    for element in Cuffdiff_options_split:
+        if element!="--FDR":
+            if skip==0:
+                quant_options=quant_options+element+" "
+            else:
+                skip=0
+        else:
+            skip=1
+    quant_options=quant_options[:-1]
+    Pr=cores
+    Mr=total_mem
+    status_file=open(os.path.join(home_folder,project_name,"status.txt"),"a")
+    status_file.write("Quantifying reads in loci...\n")
+    status_file.close()
+    quant_memory=20000000
+    N=len(samples_and_strands)
+    progress_file=open(os.path.join(path,"quant_progress.txt"),"w")
+    progress_file.close()
+    finished=0
+    samples_left=N    
+    while finished!=N:
+        try:
+            progress_file=open(os.path.join(path,"quant_progress.txt"),"r")
+            progress_lines=progress_file.readlines()
+            if len(progress_lines)>finished:
+                last_process=progress_lines[-1]
+                used_cores=re.split("\s+",last_process)
+                used_cores=used_cores[0]
+                used_cores=int(used_cores)
+                finished=len(progress_lines)
+                Mr=Mr+used_cores*t
+                Pr=Pr+used_cores
+            progress_file.close()
+        except:
+            continue
+        if LSF!=[]:
+            cores_per_sample=int(total_mem/quant_memory)
+            if cores_per_sample>cores:
+                cores_per_sample=cores
+            if len(samples_and_strands)>0:
+                samples_and_strand=samples_and_strands[0]
+                samples_and_strands=samples_and_strands[1:]
+                sample=samples_and_strand[0]
+                strand=samples_and_strand[1]
+                if aligner=="tophat":
+                    read=os.path.join(path,sample,"accepted_hits.bam")
+                if aligner=="STAR":
+                    read=os.path.join(path,sample,"Aligned.sortedByCoord.out.bam")
+                if strand=="reverse":
+                    strand_sel="fr-firststrand"
+                if strand=="yes":
+                    strand_sel="fr-secondstrand"
+                if strand=="no":
+                    strand_sel="fr-unstranded"
+                LSF_run=['bsub','-o',os.path.join(path,"logs",sample+"_quant.out"),'-e',os.path.join(path,"logs",sample+"_quant.err"),'-R','"rusage[mem='+"120000"+'] span[hosts=1]"','-q',"bigmem","-n","4","-W","24:00","-P",LSFProject]
+                subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/Cuffquant.py"),"--quant",quant,"--settings",quant_options,"-s",strand_sel,"-i",read,"-g",gtf,"-p",os.path.join(path,sample),"--mainpath",path,"--cores","8"])
+        if samples_left>0 and LSF==[]:
+            for i in xrange(samples_left):
+                if i<samples_left:
+                    cores_per_sample=int(Mr/(quant_memory*(samples_left-i)))
+                    if cores_per_sample>=1:
+                        break
+            if Pr>=cores_per_sample and cores_per_sample>=1 and LSF==[]:
+                Mr=Mr-cores_per_sample*quant_memory
+                Pr=Pr-cores_per_sample
+                if len(samples_and_strands)>0:
+                    samples_left=samples_left-1
+                    samples_and_strand=samples_and_strands[0]
+                    samples_and_strands=samples_and_strands[1:]
+                    sample=samples_and_strand[0]
+                    strand=samples_and_strand[1]
+                    if aligner=="tophat":
+                        read=os.path.join(path,sample,"accepted_hits.bam")
+                    if aligner=="STAR":
+                        read=os.path.join(path,sample,"Aligned.sortedByCoord.out.bam")
+                    if strand=="reverse":
+                        strand_sel="fr-firststrand"
+                    if strand=="yes":
+                        strand_sel="fr-secondstrand"
+                    if strand=="no":
+                        strand_sel="fr-unstranded"
+                    subprocess.call(["python",os.path.join(home_folder,"beta/Cuffquant.py"),"--quant",quant,"--settings",quant_options,"-s",strand_sel,"-i",read,"-g",gtf,"-p",os.path.join(path,sample),"--mainpath",path,"--cores",str(cores_per_sample)])
+                
     
 def main(reference,project_info,design,tools):
     global cores_per_sample
@@ -294,8 +382,8 @@ def main(reference,project_info,design,tools):
     tophat=tools[1]
     Cufflinks=tools[2]
     Cuffcompare=os.path.join(Cufflinks,"cuffcompare")
-    Cuffquant=os.path.join(Cufflinks,"cuffquant")
     Cuffdiff=os.path.join(Cufflinks,"cuffdiff")
+    quant=os.path.join(Cufflinks,"cuffquant")
     Cufflinks=os.path.join(Cufflinks,"cufflinks")
     CNCI=tools[3]
     primer_3=tools[4]
@@ -336,10 +424,10 @@ def main(reference,project_info,design,tools):
             continue
         if LSF!=[]:
             if aligner=="tophat":
-                cores_per_sample=int(total_mem/t)
+                cores_per_sample=8
                 min_p=Tophat_min_p
             if aligner=="STAR":
-                cores_per_sample=int(total_mem/s)
+                cores_per_sample=2
                 min_p=STAR_min_p
             if cores_per_sample>cores:
                 cores_per_sample=cores
@@ -462,7 +550,7 @@ def main(reference,project_info,design,tools):
         if paired==0:
             diff=diff+["-m",str(agg_mean),"-s",str(agg_SD)]
         if transcript_filter!="no":
-            diff=diff+re.split("\s+",Cuffdiff_options)+[os.path.join(path,"stringent.gtf")]
+            diff=diff+re.split("\s+",Cuffdiff_options)+[os.path.join(path,"filtered.gtf")]
         else:
             diff=diff+re.split("\s+",Cuffdiff_options)+[os.path.join(path,"all.combined.gtf")]
         for i in xrange(len(labels)):
@@ -471,10 +559,7 @@ def main(reference,project_info,design,tools):
             read_group=""
             for j in xrange(len(samples_list)):
                 sample=samples_list[j]
-                if aligner=="tophat":
-                    read=os.path.join(path,sample,"accepted_hits.bam")
-                if aligner=="STAR":
-                    read=os.path.join(path,sample,"Aligned.sortedByCoord.out.bam")
+                read=os.path.join(path,sample,"abundances.cxb")
                 read_group=read_group+","+read
             diff.append(read_group[1:])
     status_file=open(os.path.join(home_folder,project_name,"status.txt"),"a")
@@ -483,7 +568,7 @@ def main(reference,project_info,design,tools):
     if LSF!=[]:
         LSFProject=LSF[4].replace("\n","")
         LSFProject=LSFProject.replace("\r","")
-        LSF_run=['bsub','-o',os.path.join(path,"logs","cuffcompare.out"),'-e',os.path.join(path,"logs","cuffcompare.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+        LSF_run=['bsub','-o',os.path.join(path,"logs","cuffcompare.out"),'-e',os.path.join(path,"logs","cuffcompare.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
     else:
         LSF_run=[]
     subprocess.call(LSF_run+[Cuffcompare,"-o",os.path.join(path,"all"),"-r",refer]+transcripts)
@@ -499,7 +584,7 @@ def main(reference,project_info,design,tools):
         status_file.write("Filtering spurious transcripts...\n")
         status_file.close()
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","recurrent.out"),'-e',os.path.join(path,"logs","recurrent.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","recurrent.out"),'-e',os.path.join(path,"logs","recurrent.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/recurrent.py"),"-t","all.tracking","-p",path,"-r",replicates,"-g",group_filter,"-b",total_filter])
         if LSF!=[]:
             while True:
@@ -509,7 +594,7 @@ def main(reference,project_info,design,tools):
                 except:
                     continue
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","novel.out"),'-e',os.path.join(path,"logs","novel.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","novel.out"),'-e',os.path.join(path,"logs","novel.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/novel.py"),"-i","all.combined.gtf","-r","recurrent.txt","-p",path])
         if LSF!=[]:
             while True:
@@ -522,7 +607,7 @@ def main(reference,project_info,design,tools):
         status_file.write("Classifying transcripts...\n")
         status_file.close()
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","classify.out"),'-e',os.path.join(path,"logs","classify.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","classify.out"),'-e',os.path.join(path,"logs","classify.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/classify.py"),"-i","stringent.gtf","-f",ENS_ref,"-p",path])
         if LSF!=[]:
             while True:
@@ -536,7 +621,7 @@ def main(reference,project_info,design,tools):
         status_file.write("Classifying transcripts...\n")
         status_file.close()
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","classify.out"),'-e',os.path.join(path,"logs","classify.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","classify.out"),'-e',os.path.join(path,"logs","classify.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/classify.py"),"-i","all.combined.gtf","-f",ENS_ref,"-p",path])
         if LSF!=[]:
             while True:
@@ -550,8 +635,8 @@ def main(reference,project_info,design,tools):
     status_file.write("Estimating coding potential...\n")
     status_file.close()
     if LSF!=[]:
-        LSF_run=['bsub','-o',os.path.join(path,"logs","coding_potential.out"),'-e',os.path.join(path,"logs","coding_potential.err"),'-q',LSF[0],'-R','"rusage[mem='+LSF[1]+'] span[hosts=1]"',"-n",str(Cuffdiff_cores),"-W",LSF[3],"-P",LSFProject]
-    subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/coding_potential.py"),"-a",twoBit,"-p",path,"-c",str(Cuffdiff_cores),"--CNCI",CNCI])
+        LSF_run=['bsub','-o',os.path.join(path,"logs","coding_potential.out"),'-e',os.path.join(path,"logs","coding_potential.err"),'-q',"general",'-R','"rusage[mem='+"28000"+'] span[hosts=1]"',"-n","8","-W","160:00","-P",LSFProject]
+    subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/coding_potential.py"),"-a",twoBit,"-p",path,"-c","8","--CNCI",CNCI])
     if LSF!=[]:
         while True:
             try:
@@ -561,11 +646,13 @@ def main(reference,project_info,design,tools):
                 continue
     run_cuffdiff="no"
     if Cuffdiff_options!="SKIP":
+        gtf=os.path.join(path,"filtered.gtf")
+        Cuffquant(quant,samples_and_strands,LSF,LSFProject,aligner,path,Cuffdiff_options,gtf)
         status_file=open(os.path.join(home_folder,project_name,"status.txt"),"a")
         status_file.write("Running Cuffdiff..\n")
         status_file.close()
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","cuffdiff.out"),'-e',os.path.join(path,"logs","cuffdiff.out"),'-q',LSF[0],'-R','"rusage[mem='+LSF[1]+'] span[hosts=1]"',"-n",str(Cuffdiff_cores),"-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","cuffdiff.out"),'-e',os.path.join(path,"logs","cuffdiff.out"),'-q',"bigmem",'-R','"rusage[mem='+"120000"+'] span[hosts=1]"',"-n","8","-W","24:00","-P",LSFProject]
         subprocess.call(LSF_run+diff)
         if LSF!=[]:
             while True:
@@ -578,7 +665,7 @@ def main(reference,project_info,design,tools):
         status_file.write("Formatting results...\n")
         status_file.close()
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","format.out"),'-e',os.path.join(path,"logs","format.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","format.out"),'-e',os.path.join(path,"logs","format.err"),'-q',"general","-n","1","-W","160:00","-P",LSFProject]
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/format.py"),"-p",path,"-s",str(labels)])
         if LSF!=[]:
             while True:
@@ -613,7 +700,7 @@ def main(reference,project_info,design,tools):
             if aligner=="STAR":
                 read=os.path.join(path,sample,"Aligned.sortedByCoord.out.bam")
 	    if LSF!=[]:
-                LSF_run=['bsub','-o',os.path.join(path,"logs",sample+"_HTSeq.out"),'-e',os.path.join(path,"logs",sample+"_HTSeq.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+                LSF_run=['bsub','-o',os.path.join(path,"logs",sample+"_HTSeq.out"),'-e',os.path.join(path,"logs",sample+"_HTSeq.err"),'-q',"general","-n","1",'-R','"rusage[mem='+"28000"+'] span[hosts=1]"',"-W","160:00","-P",LSFProject]
                 print str(LSF_run)
 	    print  str(["python",os.path.join(home_folder,"beta/HTSeq.py"),"--sam",samtools,"-c",htseq_count,"-s",strand,"-i",read,"-g",gtf,"-p",os.path.join(path,sample),"--mainpath",path])
             if LSF!=[]:
@@ -671,7 +758,7 @@ def main(reference,project_info,design,tools):
         DESeq_options=str(DESeq_options)
         edgeR_options=str(edgeR_options)
         if LSF!=[]:
-            LSF_run=['bsub','-o',os.path.join(path,"logs","R.out"),'-e',os.path.join(path,"logs","R.err"),'-q',LSF[0],"-n","1","-W",LSF[3],"-P",LSFProject]
+            LSF_run=['bsub','-o',os.path.join(path,"logs","R.out"),'-e',os.path.join(path,"logs","R.err"),'-q',"general","-n","1",'-R','"rusage[mem='+"28000"+'] span[hosts=1]"',"-W","160:00","-P",LSFProject]
         print str(["python",os.path.join(home_folder,"beta/gene_expression.py"),"-p",path,"-s",sample_names,"-g",group_list,"-r",R,"-f",formats,"--DESeq_options",DESeq_options,"--edgeR_options",edgeR_options])
         subprocess.call(LSF_run+["python",os.path.join(home_folder,"beta/gene_expression.py"),"-p",path,"-s",sample_names,"-g",group_list,"-r",R,"-f",formats,"--DESeq_options",DESeq_options,"--edgeR_options",edgeR_options])
         if LSF!=[]:
