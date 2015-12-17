@@ -483,17 +483,16 @@ def install_ref(species,assembly,fasta,gtf,aligner,status,LSF):
                     tophat_installed=1
         reference_file.close()
         reference_file=open("reference.txt","a")
-    if species=="human" and assembly=="GRCh38":
-        if exist==0:
-            get_reference_fa(species,assembly,aligner,fasta,reference_file,LSF)
-            get_reference_gtf(species,assembly,gtf,reference_file)
-        else:
-            if aligner=="tophat" and tophat_installed==0:
-                build_bowtie_index(species,assembly,'Homo_sapiens.GRCh38.dna.primary_assembly.fa','GRCh38',reference_file,LSF)
-                tophat_installed=1
-            if aligner=="STAR" and STAR_installed==0:
-                build_STAR_index(species,assembly,'Homo_sapiens.GRCh38.dna.primary_assembly.fa','GRCh38',reference_file,LSF)
-                STAR_installed=1
+    if exist==0:
+        get_reference_fa(species,assembly,aligner,fasta,reference_file,LSF)
+        get_reference_gtf(species,assembly,gtf,reference_file)
+    else:
+        if aligner=="tophat" and tophat_installed==0:
+            build_bowtie_index(species,assembly,fasta,reference_file,LSF)
+            tophat_installed=1
+        if aligner=="STAR" and STAR_installed==0:
+            build_STAR_index(species,assembly,fasta,reference_file,LSF)
+            STAR_installed=1
     reference_file.close()
     
 def install_SRA(link,version,tools_file):
